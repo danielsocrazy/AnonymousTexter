@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send Message to Discord</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #e8f0fe;
+            background-image: url('https://cdn.pixabay.com/photo/2017/12/11/13/09/christmas-3008437_960_720.jpg');
+            background-size: cover;
+            background-attachment: fixed;
+            padding: 10px;
+            color: white;
+            overflow: hidden;
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        h3 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #D32F2F;
+            font-weight: bold;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 14px;
+            margin-bottom: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #FF4081;
+            box-shadow: 0 0 5px rgba(255, 64, 129, 0.2);
+        }
+
+        .button {
+            width: 100%;
+            padding: 15px;
+            background-color: #D32F2F;
+            color: white;
+            font-size: 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        .button:hover {
+            background-color: #FF4081;
+            transform: scale(1.05);
+        }
+
+        .button:disabled {
+            background-color: #C5CAE9;
+            cursor: not-allowed;
+        }
+
+        .status {
+            font-size: 16px;
+            margin: 10px 0;
+            color: #333;
+        }
+
+        .cooldown {
+            font-size: 14px;
+            color: #FF4500;
+            font-weight: bold;
+        }
+
+        /* Mobile Specific Styles */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h3 {
+                font-size: 24px;
+            }
+
+            .button {
+                font-size: 16px;
+            }
+
+            input[type="text"] {
+                font-size: 14px;
+            }
+        }
+
+        /* Christmas-themed Snowflakes Animation */
+        @keyframes snowflakes {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(100vh); opacity: 0; }
+        }
+
+        .snowflake {
+            position: absolute;
+            top: -10px;
+            color: #ffffff;
+            font-size: 20px;
+            z-index: 10;
+            animation: snowflakes 10s linear infinite;
+        }
+
+        .snowflake:nth-child(odd) {
+            left: 10%;
+            animation-duration: 12s;
+            animation-delay: 2s;
+        }
+
+        .snowflake:nth-child(even) {
+            left: 80%;
+            animation-duration: 14s;
+            animation-delay: 1s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h3>Send Message to Discord</h3>
+        <input type="text" id="name" placeholder="Enter your name..." />
+        <input type="text" id="message" placeholder="Type your message..." />
+        <p class="status" id="status"></p>
+        <button class="button" id="sendMessageBtn" disabled>Send Message</button>
+        <p class="cooldown" id="cooldownTimer"></p>
+    </div>
+
+    <!-- Christmas Snowflakes -->
+    <div class="snowflake">❄</div>
+    <div class="snowflake">❄</div>
+    <div class="snowflake">❄</div>
+    <div class="snowflake">❄</div>
+    <div class="snowflake">❄</div>
+
+    <script>
+        const webhookURL = 'https://discord.com/api/webhooks/1317880775508492369/ZQVgJJUKBQPAtE-hSxEx9bdzYmJr9gBhbYLjiE7C2A1xcvJy31BRhFIqJvfJHLBNo1kW'; // Replace with your Discord Webhook URL
+        const nameInput = document.getElementById('name');
+        const messageInput = document.getElementById('message');
+        const sendMessageBtn = document.getElementById('sendMessageBtn');
+        const statusElement = document.getElementById('status');
+        const cooldownTimer = document.getElementById('cooldownTimer');
+
+        let cooldown = false;
+        let countdownTime = 5;
+
+        // Function to send message to Discord via webhook
+        function sendMessageToDiscord(name, message) {
+            const payload = {
+                content: `${name}: ${message}`  // Format the message with the name and the message
+            };
+
+            fetch(webhookURL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(data => {
+                statusElement.textContent = 'Message sent successfully!';
+                statusElement.style.color = 'green';
+                // Clear the input fields after sending the message
+                nameInput.value = '';
+                messageInput.value = '';
+                startCooldown();
+            })
+            .catch(error => {
+                statusElement.textContent = 'An error occurred while sending the message.';
+                statusElement.style.color = 'red';
+            });
+        }
+
+        // Start cooldown with countdown timer
+        function startCooldown() {
+            cooldown = true;
+            countdownTime = 5; // Reset countdown to 5 seconds
+            updateCooldownTimer();
+            sendMessageBtn.disabled = true; // Disable button during cooldown
+            let timerInterval = setInterval(() => {
+                if (countdownTime <= 0) {
+                    clearInterval(timerInterval);
+                    cooldown = false;
+                    cooldownTimer.textContent = '';
+                    sendMessageBtn.disabled = false; // Enable button after cooldown
+                } else {
+                    countdownTime--;
+                    updateCooldownTimer();
+                }
+            }, 1000);
+        }
+
+        // Update countdown display
+        function updateCooldownTimer() {
+            cooldownTimer.textContent = `Cooldown: ${countdownTime}s`;
+        }
+
+        // Enable send button only when both fields are filled
+        function toggleSendButton() {
+            if (nameInput.value.trim() !== '' && messageInput.value.trim() !== '') {
+                sendMessageBtn.disabled = false;
+            } else {
+                sendMessageBtn.disabled = true;
+            }
+        }
+
+        // Event listener to detect when the user presses "Enter"
+        messageInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && !cooldown) {
+                const name = nameInput.value.trim();
+                const message = messageInput.value.trim();
+
+                if (name && message) {
+                    sendMessageToDiscord(name, message);
+                } else {
+                    statusElement.textContent = 'Please fill in both your name and message.';
+                    statusElement.style.color = 'red';
+                }
+            }
+        });
+
+        // Event listener for the send message button click (mimicking "Enter" behavior)
+        sendMessageBtn.addEventListener('click', function() {
+            const name = nameInput.value.trim();
+            const message = messageInput.value.trim();
+
+            if (name && message && !cooldown) {
+                sendMessageToDiscord(name, message);
+            } else {
+                statusElement.textContent = 'Please fill in both your name and message.';
+                statusElement.style.color = 'red';
+            }
+        });
+
+        // Watch for changes in the input fields to enable/disable the send button
+        nameInput.addEventListener('input', toggleSendButton);
+        messageInput.addEventListener('input', toggleSendButton);
+    </script>
+</body>
+</html>
